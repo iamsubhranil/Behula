@@ -13,11 +13,14 @@ struct Object {
 
     Object(const char *file, float scale, float spawn_x, float spawn_y,
            float hx = 0, float hy = 0, float hw = 0, float hh = 0)
-        : hitbox_width(hw), hitbox_height(hh) {
+        : hitbox_width(hw * scale), hitbox_height(hh * scale) {
         t = Graphics::loadTexture(file, scale);
         rect = {spawn_x, spawn_y - t.height, (float)t.width, (float)t.height};
-        hitbox_x = hx;
-        hitbox_y = hy;
+
+        const float leeway = 50;
+
+        hitbox_x = hx + (leeway / 2);
+        hitbox_y = hy + (leeway / 2);
 
         if (hw == 0) {
             hitbox_width = t.width;
@@ -25,6 +28,9 @@ struct Object {
         if (hh == 0) {
             hitbox_height = t.height;
         }
+
+        hitbox_width -= leeway;
+        hitbox_height -= leeway;
     }
 
     void move(float dx, float dy) {
@@ -46,6 +52,11 @@ struct Object {
 
     void draw(SDL_Renderer *renderer) {
         SDL_RenderCopyF(renderer, t.texture, NULL, &rect);
+#ifdef DEBUG
+        SDL_FRect hitbox = {rect.x + hitbox_x, rect.y + hitbox_y, hitbox_width,
+                            hitbox_height};
+        SDL_RenderDrawRectF(renderer, &hitbox);
+#endif
     }
 };
 
@@ -83,22 +94,16 @@ struct Player {
     }
 
     void jump() {
-        if (currentState == JUMP)
-            remainingStateMs += totalStateMs;
-        else {
-            lastMs = SDL_GetTicks64();
-            remainingStateMs = totalStateMs;
-        }
+        lastMs = SDL_GetTicks64();
+        remainingStateMs = totalStateMs;
+
         currentState = JUMP;
     }
 
     void croutch() {
-        if (currentState == CROUTCH)
-            remainingStateMs += totalStateMs;
-        else {
-            lastMs = SDL_GetTicks64();
-            remainingStateMs = totalStateMs;
-        }
+        lastMs = SDL_GetTicks64();
+        remainingStateMs = totalStateMs;
+
         currentState = CROUTCH;
     }
 
@@ -134,4 +139,5 @@ struct Player {
 struct CharacterAI {
     static void spawnObjects(float height);
     static void drawAll(SDL_Renderer *renderer, float dx);
+    static bool checkCollision(Player &p);
 };

@@ -18,6 +18,7 @@ struct Graphics {
 
     static void init();
     static void run();
+    static void destroy();
 
     static void addTexture(SDL_Texture *t);
 

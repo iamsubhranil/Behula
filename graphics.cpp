@@ -125,6 +125,10 @@ void Graphics::run() {
         }
         SDL_RenderCopy(renderer, fpsInfo.textTexture, NULL, &fpsInfo.destRect);
         SDL_RenderPresent(renderer);
+        if (CharacterAI::checkCollision(player)) {
+            close = true;
+            printf("[GameOver] Collision!\n");
+        }
     }
 }
 
@@ -142,4 +146,10 @@ Graphics::Texture Graphics::loadTexture(const char* file, double scale) {
     t.height = (int)((double)t.height * scale);
 
     return t;
+}
+
+void Graphics::destroy() {
+    SDL_DestroyRenderer(renderer);
+    SDL_DestroyWindow(window);
+    SDL_Quit();
 }

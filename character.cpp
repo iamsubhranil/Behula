@@ -11,10 +11,10 @@ struct Enemy {
     float hx, hy, hw, hh;
 };
 
-Enemy enemies[] = {{"sprites/enemy/enemy_1.png", 0.5, 1, 0, 0, 0, 306},
+Enemy enemies[] = {{"sprites/enemy/enemy_1.png", 0.5, 1, 0, 0, 0, 250},
                    {"sprites/enemy/enemy_2.png", 0.5, 2, 0, 0, 0, 0},
-                   {"sprites/enemy/enemy_3.png", 0.5, 1, 0, 0, 0, 306},
-                   {"sprites/enemy/enemy_4.png", 0.5, 1, 0, 0, 0, 306}};
+                   {"sprites/enemy/enemy_3.png", 0.5, 1, 0, 0, 0, 250},
+                   {"sprites/enemy/enemy_4.png", 0.5, 1, 0, 0, 0, 250}};
 
 void CharacterAI::spawnObjects(float height) {
     bool shouldSpawn = (rand() % 119) == 57;
@@ -63,4 +63,11 @@ void CharacterAI::drawAll(SDL_Renderer *renderer, float dx) {
             a.draw(renderer);
         }
     }
+}
+
+bool CharacterAI::checkCollision(Player &p) {
+    for (const auto &o : loadedObjects) {
+        if (p.collided(o)) return true;
+    }
+    return false;
 }

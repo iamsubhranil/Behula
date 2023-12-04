@@ -8,4 +8,5 @@ int main() {
     srand(time(NULL));
     Graphics::init();
     Graphics::run();
+    Graphics::destroy();
 }
