@@ -69,12 +69,15 @@ void CharacterAI::drawAll(SDL_Renderer *renderer, float dx) {
 }
 
 bool CharacterAI::checkCollision(Player &p) {
-    for (auto &o : loadedObjects) {
-        if (p.collided(o)) return true;
-        if (!o.valueCounted && p.horizontalIntersect(o)) {
-            p.score += o.value;
-            o.valueCounted = true;
-        }
+    if (loadedObjects.size() == 0) return false;
+    Object &o = loadedObjects.front();
+    if (p.collided(o)) {
+        return true;
     }
+    if (!o.valueCounted && p.horizontalIntersect(o)) {
+        p.score += o.value;
+        o.valueCounted = true;
+    }
+
     return false;
 }
