@@ -37,14 +37,15 @@ debug: CXXFLAGS += -g3 -DDEBUG
 debug: NVFLAGS += -g -G
 debug: build
 
-pgo: merge_profraw 
+pgo: | merge_profraw pgouse
+	./behula
 
 ifeq ($(findstring clang++,$(CXX)),clang++)
 clean_pgodata: clean
 	$(V) rm -f default_*.profraw default.profdata
 else
 clean_pgodata: clean
-	$(V) rm -f *.gcda objects/*.gcda stdlib/*/*.gcda
+	$(V) rm -f *.gcda
 endif
 
 pgobuild: CXXFLAGS+=-fprofile-generate -march=native
@@ -54,7 +55,8 @@ pgobuild: CXXFLAGS+=-mllvm -vp-counters-per-site=5
 endif
 pgobuild: | clean_pgodata release
 
-pgorun:
+pgorun: | pgobuild
+	./behula
 
 ifeq ($(findstring clang++,$(CXX)),clang++)
 merge_profraw: pgorun
