@@ -8,11 +8,13 @@ struct Object {
     SDL_FRect rect;
     Graphics::Texture t;
     float hitbox_x, hitbox_y, hitbox_width, hitbox_height;
+    long value;
+    bool valueCounted;
 
     Object() {}
 
     Object(const char *file, float scale, float spawn_x, float spawn_y,
-           float hx = 0, float hy = 0, float hw = 0, float hh = 0)
+           float hx = 0, float hy = 0, float hw = 0, float hh = 0, long s = 0)
         : hitbox_width(hw * scale), hitbox_height(hh * scale) {
         t = Graphics::loadTexture(file, scale);
         rect = {spawn_x, spawn_y - t.height, (float)t.width, (float)t.height};
@@ -31,6 +33,9 @@ struct Object {
 
         hitbox_width -= leeway;
         hitbox_height -= leeway;
+
+        value = s;
+        valueCounted = false;
     }
 
     void move(float dx, float dy) {
@@ -38,9 +43,16 @@ struct Object {
         rect.y -= dy;
     }
 
-    bool collided(const Object &c) {
+    bool horizontalIntersect(const Object &c) {
         if ((rect.x + hitbox_x + hitbox_width < c.rect.x + c.hitbox_x) ||
             (c.rect.x + c.hitbox_x + c.hitbox_width < rect.x + hitbox_x)) {
+            return false;
+        }
+        return true;
+    }
+
+    bool collided(const Object &c) {
+        if (!horizontalIntersect(c)) {
             return false;
         }
         if ((rect.y + hitbox_y + hitbox_height < c.rect.y + c.hitbox_y) ||
@@ -73,6 +85,7 @@ struct Player {
     State currentState;
 
     float positionY;
+    long score;
 
     Player(float x, float y) {
         playerTextures[RUN_1] =
@@ -87,13 +100,19 @@ struct Player {
         remainingStateMs = runningStateMs;
         lastMs = SDL_GetTicks64();
         positionY = y;
+        score = 0;
     }
 
     bool collided(const Object &c) {
         return playerTextures[currentState].collided(c);
     }
 
+    bool horizontalIntersect(const Object &c) {
+        return playerTextures[currentState].horizontalIntersect(c);
+    }
+
     void jump() {
+        if (currentState == JUMP) return;
         lastMs = SDL_GetTicks64();
         remainingStateMs = totalStateMs;
 
@@ -101,6 +120,7 @@ struct Player {
     }
 
     void croutch() {
+        if (currentState == CROUTCH) return;
         lastMs = SDL_GetTicks64();
         remainingStateMs = totalStateMs;
 
@@ -134,6 +154,9 @@ struct Player {
         playerTextures[currentState].draw(renderer);
         lastMs = currentMs;
     }
+
+    SDL_FRect getCurrentRect() { return playerTextures[currentState].rect; }
+    long getScore() { return score; }
 };
 
 struct CharacterAI {

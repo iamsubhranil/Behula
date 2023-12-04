@@ -48,7 +48,7 @@ struct TextInfo {
 };
 
 TextInfo drawText(SDL_Renderer* renderer, TTF_Font* FONT, const char* str,
-                  TextInfo lastInfo) {
+                  TextInfo& lastInfo) {
     if (lastInfo.textTexture) {
         SDL_DestroyTexture(lastInfo.textTexture);
     }
@@ -59,7 +59,8 @@ TextInfo drawText(SDL_Renderer* renderer, TTF_Font* FONT, const char* str,
 
     SDL_Texture* textTexture =
         SDL_CreateTextureFromSurface(renderer, textSurface);
-    SDL_Rect destRect = {0, 0, textSurface->w, textSurface->h};
+    SDL_Rect destRect = {lastInfo.destRect.x, lastInfo.destRect.y,
+                         textSurface->w, textSurface->h};
 
     SDL_FreeSurface(textSurface);
     return {textTexture, destRect};
@@ -70,9 +71,14 @@ void Graphics::run() {
     bool close = false;
     // measure fps
     char fpsStr[50] = {'.', '.', '.'};
-    TTF_Font* FONT = TTF_OpenFont("font.ttf", 20);
+
+    TTF_Font* fpsFont = TTF_OpenFont("font.ttf", 20);
     TextInfo fpsInfo = {NULL, {0, 0, 0, 0}};
     Uint64 lastText = 0;
+
+    TTF_Font* scoreFont = TTF_OpenFont("font.ttf", 30);
+    TextInfo scoreInfo = {NULL, {200, 0, 0, 0}};
+    long lastScore = -1;
 
     Player player(30, 710);
 
@@ -121,9 +127,16 @@ void Graphics::run() {
             else
                 strcpy(fpsStr, "0ms");
             lastText = currentTick;
-            fpsInfo = drawText(renderer, FONT, fpsStr, fpsInfo);
+            fpsInfo = drawText(renderer, fpsFont, fpsStr, fpsInfo);
+        }
+        if (player.getScore() != lastScore) {
+            lastScore = player.getScore();
+            sprintf(fpsStr, "Score: %lu", lastScore);
+            scoreInfo = drawText(renderer, scoreFont, fpsStr, scoreInfo);
         }
         SDL_RenderCopy(renderer, fpsInfo.textTexture, NULL, &fpsInfo.destRect);
+        SDL_RenderCopy(renderer, scoreInfo.textTexture, NULL,
+                       &scoreInfo.destRect);
         SDL_RenderPresent(renderer);
         if (CharacterAI::checkCollision(player)) {
             close = true;

@@ -9,12 +9,13 @@ struct Enemy {
     float scale;
     int max_staggered;
     float hx, hy, hw, hh;
+    long score;
 };
 
-Enemy enemies[] = {{"sprites/enemy/enemy_1.png", 0.5, 1, 0, 0, 0, 250},
-                   {"sprites/enemy/enemy_2.png", 0.5, 2, 0, 0, 0, 0},
-                   {"sprites/enemy/enemy_3.png", 0.5, 1, 0, 0, 0, 250},
-                   {"sprites/enemy/enemy_4.png", 0.5, 1, 0, 0, 0, 250}};
+Enemy enemies[] = {{"sprites/enemy/enemy_1.png", 0.5, 1, 0, 0, 0, 250, 10},
+                   {"sprites/enemy/enemy_2.png", 0.5, 2, 0, 0, 0, 0, 5},
+                   {"sprites/enemy/enemy_3.png", 0.5, 1, 0, 0, 0, 270, 15},
+                   {"sprites/enemy/enemy_4.png", 0.5, 1, 0, 0, 0, 290, 20}};
 
 void CharacterAI::spawnObjects(float height) {
     bool shouldSpawn = (rand() % 119) == 57;
@@ -34,15 +35,16 @@ void CharacterAI::spawnObjects(float height) {
 
     float startx = Graphics::WIDTH;
 
-    loadedObjects.push_back(
-        Object(e.filename, e.scale, startx, height, e.hx, e.hy, e.hw, e.hh));
+    loadedObjects.push_back(Object(e.filename, e.scale, startx, height, e.hx,
+                                   e.hy, e.hw, e.hh, e.score));
 
     if (e.max_staggered > 1) {
         shouldSpawn = (rand() % 119) == 69;
         if (!shouldSpawn) return;
 
         loadedObjects.push_back(Object(e.filename, e.scale, startx + e.hw,
-                                       height, e.hx, e.hy, e.hw, e.hh));
+                                       height, e.hx, e.hy, e.hw, e.hh,
+                                       e.score));
     }
 }
 
@@ -66,8 +68,12 @@ void CharacterAI::drawAll(SDL_Renderer *renderer, float dx) {
 }
 
 bool CharacterAI::checkCollision(Player &p) {
-    for (const auto &o : loadedObjects) {
+    for (auto &o : loadedObjects) {
         if (p.collided(o)) return true;
+        if (!o.valueCounted && p.horizontalIntersect(o)) {
+            p.score += o.value;
+            o.valueCounted = true;
+        }
     }
     return false;
 }
