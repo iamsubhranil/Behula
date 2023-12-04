@@ -54,8 +54,9 @@ void CharacterAI::drawAll(SDL_Renderer *renderer, float dx) {
             a.move(dx, 0);
         }
 
-        while (loadedObjects.front().rect.x + loadedObjects.front().rect.w <
-               0) {
+        while (loadedObjects.size() > 0 &&
+               loadedObjects.front().rect.x + loadedObjects.front().rect.w <
+                   0) {
             loadedObjects.pop_front();
         }
 
