@@ -7,7 +7,7 @@
 // for font functions
 #include <SDL2/SDL_ttf.h>
 
-#include <vector>
+#include <unordered_map>
 
 #include "character.h"
 #include "graphics.h"
@@ -45,17 +45,18 @@ void Graphics::init() {
 struct TextInfo {
     SDL_Texture* textTexture;
     SDL_Rect destRect;
+    TTF_Font* font;
 };
 
-TextInfo drawText(SDL_Renderer* renderer, TTF_Font* FONT, const char* str,
-                  TextInfo& lastInfo) {
+void drawText(SDL_Renderer* renderer, const char* str, TextInfo& lastInfo) {
     if (lastInfo.textTexture) {
         SDL_DestroyTexture(lastInfo.textTexture);
     }
 
     SDL_Color foregroundColor = {255, 255, 255, 255};
 
-    SDL_Surface* textSurface = TTF_RenderText_Solid(FONT, str, foregroundColor);
+    SDL_Surface* textSurface =
+        TTF_RenderText_Solid(lastInfo.font, str, foregroundColor);
 
     SDL_Texture* textTexture =
         SDL_CreateTextureFromSurface(renderer, textSurface);
@@ -63,24 +64,41 @@ TextInfo drawText(SDL_Renderer* renderer, TTF_Font* FONT, const char* str,
                          textSurface->w, textSurface->h};
 
     SDL_FreeSurface(textSurface);
-    return {textTexture, destRect};
+    lastInfo.textTexture = textTexture;
+    lastInfo.destRect = destRect;
+}
+
+auto uiTexts = std::unordered_map<const char*, TextInfo>();
+
+void initText(const char* name, int x, int y, int fontSize,
+              const char* fname = "font.ttf") {
+    uiTexts[name] = {NULL, {x, y, 0, 0}, TTF_OpenFont(fname, fontSize)};
+}
+
+template <typename F, typename... T>
+void updateText(F condition, SDL_Renderer* renderer, const char* name,
+                const char* fmt, T... elements) {
+    if (condition()) {
+        char holder[100] = {0};
+        sprintf(holder, fmt, elements...);
+        drawText(renderer, holder, uiTexts[name]);
+    }
+    SDL_RenderCopy(renderer, uiTexts[name].textTexture, NULL,
+                   &uiTexts[name].destRect);
 }
 
 void Graphics::run() {
     bool keys[322] = {false};
     bool close = false;
     // measure fps
-    char fpsStr[50] = {'.', '.', '.'};
-
-    TTF_Font* fpsFont = TTF_OpenFont("font.ttf", 20);
-    TextInfo fpsInfo = {NULL, {0, 0, 0, 0}};
     Uint64 lastText = 0;
+    initText("fps", 0, 0, 20);
 
-    TTF_Font* scoreFont = TTF_OpenFont("font.ttf", 30);
-    TextInfo scoreInfo = {NULL, {200, 0, 0, 0}};
+    initText("score", 200, 0, 30);
     long lastScore = -1;
 
     Player player(30, 710);
+    float movement_speed = 1.75;
 
     while (!close) {
         SDL_Event event;
@@ -104,10 +122,10 @@ void Graphics::run() {
         SDL_RenderClear(renderer);
         // measure fps
         Uint64 lastTick = SDL_GetTicks64();
-        const float movement_speed = 2;
         Platformer::drawLayer(renderer, "sky", movement_speed);
         Platformer::drawLayer(renderer, "ground", movement_speed);
         Platformer::drawLayer(renderer, "bush", movement_speed);
+        movement_speed += 0.00005;
         if (keys[SDLK_w]) {
             player.jump();
             keys[SDLK_w] = false;
@@ -120,23 +138,17 @@ void Graphics::run() {
         player.draw(renderer);
         Uint64 currentTick = SDL_GetTicks64();
         // draw fps
-        if (currentTick - lastText > 500) {
-            Uint64 ms = currentTick - lastTick;
-            if (ms > 0)
-                sprintf(fpsStr, "%4lums %5lufps", ms, 1000 / ms);
-            else
-                strcpy(fpsStr, "0ms");
-            lastText = currentTick;
-            fpsInfo = drawText(renderer, fpsFont, fpsStr, fpsInfo);
-        }
-        if (player.getScore() != lastScore) {
-            lastScore = player.getScore();
-            sprintf(fpsStr, "Score: %lu", lastScore);
-            scoreInfo = drawText(renderer, scoreFont, fpsStr, scoreInfo);
-        }
-        SDL_RenderCopy(renderer, fpsInfo.textTexture, NULL, &fpsInfo.destRect);
-        SDL_RenderCopy(renderer, scoreInfo.textTexture, NULL,
-                       &scoreInfo.destRect);
+        Uint64 ms = currentTick - lastTick;
+        updateText(
+            [currentTick, lastText] { return currentTick - lastText > 500; },
+            renderer, "fps", "%4lums %5lufps", ms, ms > 0 ? 1000 / ms : 0);
+        if (currentTick - lastText > 500) lastText = currentTick;
+
+        updateText(
+            [player, lastScore] { return player.getScore() != lastScore; },
+            renderer, "score", "Score: %lu", player.getScore());
+        lastScore = player.getScore();
+
         SDL_RenderPresent(renderer);
         if (CharacterAI::checkCollision(player)) {
             close = true;
