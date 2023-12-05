@@ -156,7 +156,7 @@ struct Player {
     }
 
     SDL_FRect getCurrentRect() { return playerTextures[currentState].rect; }
-    long getScore() { return score; }
+    long getScore() const { return score; }
 };
 
 struct CharacterAI {
