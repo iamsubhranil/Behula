@@ -8,3 +8,6 @@ Requires SDL2, SDL2_Image, SDL2_TTF.
 $ make all
 $ ./behula
 ```
+
+# Screenshots
+![Behula](./img/img0.png)
